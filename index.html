@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Film Positive">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#141210">
+<title>Film Positive — Negative Converter</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%23141210'/%3E%3Crect x='6' y='6' width='52' height='52' rx='6' fill='none' stroke='%23c1440e' stroke-width='3'/%3E%3Ccircle cx='16' cy='12' r='2.4' fill='%23c1440e'/%3E%3Ccircle cx='32' cy='12' r='2.4' fill='%23c1440e'/%3E%3Ccircle cx='48' cy='12' r='2.4' fill='%23c1440e'/%3E%3Ccircle cx='16' cy='52' r='2.4' fill='%23c1440e'/%3E%3Ccircle cx='32' cy='52' r='2.4' fill='%23c1440e'/%3E%3Ccircle cx='48' cy='52' r='2.4' fill='%23c1440e'/%3E%3Crect x='20' y='22' width='24' height='20' rx='2' fill='%23e8dcc8'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23141210'/%3E%3Crect x='6' y='6' width='52' height='52' rx='6' fill='none' stroke='%23c1440e' stroke-width='3'/%3E%3Ccircle cx='16' cy='12' r='2.4' fill='%23c1440e'/%3E%3Ccircle cx='32' cy='12' r='2.4' fill='%23c1440e'/%3E%3Ccircle cx='48' cy='12' r='2.4' fill='%23c1440e'/%3E%3Ccircle cx='16' cy='52' r='2.4' fill='%23c1440e'/%3E%3Ccircle cx='32' cy='52' r='2.4' fill='%23c1440e'/%3E%3Ccircle cx='48' cy='52' r='2.4' fill='%23c1440e'/%3E%3Crect x='20' y='22' width='24' height='20' rx='2' fill='%23e8dcc8'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#141210;
+    --bg-raised:#1c1916;
+    --bg-inset:#0f0d0b;
+    --line:#332d27;
+    --line-soft:#241f1b;
+    --paper:#e8dcc8;
+    --paper-dim:#a89a86;
+    --ink:#efe7da;
+    --ink-dim:#9c9086;
+    --amber:#c1440e;
+    --amber-bright:#e0631f;
+    --amber-dim:#7a3410;
+    --safelight:rgba(193,68,14,0.14);
+    --font-display: 'Georgia', 'Iowan Old Style', serif;
+    --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'SF Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 50% -10%, var(--safelight), transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--font-ui);
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  ::selection{ background:var(--amber-dim); color:#fff; }
+  button{ font-family:inherit; }
+  input[type=range]{ -webkit-appearance:none; appearance:none; }
+
+  /* ---------- layout ---------- */
+  #app{ display:flex; flex-direction:column; min-height:100vh; }
+
+  header.topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 20px; border-bottom:1px solid var(--line-soft);
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+    position:sticky; top:0; z-index:40;
+    backdrop-filter:blur(10px);
+  }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand .mark{ width:26px; height:26px; flex:none; }
+  .brand .mark rect.frame{ stroke:var(--amber); }
+  .brand .mark rect.gate{ fill:var(--paper); }
+  .brand .mark circle{ fill:var(--amber); }
+  .brand h1{
+    font-family:var(--font-display); font-weight:400; font-size:19px; letter-spacing:0.02em;
+    margin:0; color:var(--ink);
+  }
+  .brand .sub{ font-family:var(--font-mono); font-size:10px; letter-spacing:0.14em; color:var(--ink-dim); text-transform:uppercase; margin-top:1px; }
+
+  .topbar-actions{ display:flex; gap:8px; align-items:center; }
+
+  .btn{
+    display:inline-flex; align-items:center; gap:7px;
+    background:var(--bg-raised); color:var(--ink); border:1px solid var(--line);
+    padding:9px 14px; border-radius:7px; font-size:13px; font-weight:500;
+    cursor:pointer; transition:border-color .15s, background .15s, transform .05s;
+    white-space:nowrap;
+  }
+  .btn:hover{ border-color:var(--amber-dim); background:#221e19; }
+  .btn:active{ transform:scale(0.98); }
+  .btn.primary{ background:var(--amber); border-color:var(--amber); color:#fff8f0; }
+  .btn.primary:hover{ background:var(--amber-bright); border-color:var(--amber-bright); }
+  .btn.ghost{ background:transparent; }
+  .btn.small{ padding:6px 10px; font-size:12px; }
+  .btn:disabled{ opacity:0.35; cursor:not-allowed; }
+  .btn svg{ width:15px; height:15px; flex:none; }
+
+  main.workspace{
+    flex:1; display:flex; gap:0; min-height:0;
+  }
+
+  /* ---------- viewer ---------- */
+  .viewer{
+    flex:1; display:flex; flex-direction:column; min-width:0;
+    padding:18px; gap:12px;
+  }
+  .viewer-empty{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border:1.5px dashed var(--line); border-radius:14px;
+    padding:40px 20px; text-align:center; gap:18px;
+    transition:border-color .15s, background .15s;
+  }
+  .viewer-empty.dragover{ border-color:var(--amber); background:var(--safelight); }
+  .viewer-empty svg.icon{ width:56px; height:56px; color:var(--amber); opacity:0.85; }
+  .viewer-empty h2{ font-family:var(--font-display); font-weight:400; font-size:22px; margin:0; }
+  .viewer-empty p{ color:var(--ink-dim); font-size:13.5px; max-width:360px; line-height:1.6; margin:0; }
+  .empty-actions{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+
+  .stage{
+    flex:1; position:relative; border-radius:14px; overflow:hidden;
+    background:
+      repeating-linear-gradient(45deg, #0c0a09 0 2px, #0f0d0b 2px 22px);
+    border:1px solid var(--line-soft);
+    display:flex; align-items:center; justify-content:center;
+    min-height:280px;
+  }
+  .sprocket-rail{
+    position:absolute; left:0; right:0; height:16px; display:flex; justify-content:space-evenly;
+    background:#0a0908; z-index:3; pointer-events:none;
+  }
+  .sprocket-rail.top{ top:0; }
+  .sprocket-rail.bottom{ bottom:0; }
+  .sprocket-rail i{ width:8px; height:8px; margin-top:4px; border-radius:2px; background:var(--bg-inset); box-shadow: inset 0 0 0 1px #000; }
+
+  .canvas-wrap{
+    position:relative; max-width:100%; max-height:100%; margin:20px 0; touch-action:none;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #viewCanvas{
+    max-width:100%; max-height:60vh; display:block; box-shadow:0 12px 40px rgba(0,0,0,0.55); border-radius:2px;
+  }
+  .compare-slider-line{
+    position:absolute; top:0; bottom:0; width:2px; background:var(--amber); pointer-events:none; display:none;
+    box-shadow:0 0 8px rgba(193,68,14,0.7);
+  }
+  .compare-slider-handle{
+    position:absolute; top:50%; width:34px; height:34px; margin-left:-17px; margin-top:-17px;
+    border-radius:50%; background:var(--amber); display:none; align-items:center; justify-content:center;
+    box-shadow:0 2px 10px rgba(0,0,0,0.5); pointer-events:none; color:#fff;
+  }
+  .stage.compare-active .compare-slider-line,
+  .stage.compare-active .compare-slider-handle{ display:flex; }
+
+  .stage-label{
+    position:absolute; top:22px; padding:4px 10px; border-radius:100px; font-family:var(--font-mono);
+    font-size:10px; letter-spacing:0.12em; text-transform:uppercase; z-index:4; pointer-events:none;
+  }
+  .stage-label.left{ left:22px; background:rgba(0,0,0,0.55); color:var(--paper-dim); border:1px solid var(--line); }
+  .stage-label.right{ right:22px; background:rgba(193,68,14,0.85); color:#fff; }
+
+  .viewer-toolbar{
+    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  }
+  .toggle-group{
+    display:inline-flex; background:var(--bg-inset); border:1px solid var(--line); border-radius:8px; padding:3px;
+  }
+  .toggle-group button{
+    background:transparent; border:none; color:var(--ink-dim); padding:7px 13px; border-radius:6px;
+    font-size:12.5px; cursor:pointer; font-weight:500;
+  }
+  .toggle-group button.active{ background:var(--amber); color:#fff; }
+
+  .transform-tools{ display:flex; gap:6px; }
+  .icon-btn{
+    width:34px; height:34px; display:flex; align-items:center; justify-content:center;
+    background:var(--bg-raised); border:1px solid var(--line); border-radius:7px; color:var(--ink);
+    cursor:pointer;
+  }
+  .icon-btn svg{ width:16px; height:16px; }
+  .icon-btn:hover{ border-color:var(--amber-dim); }
+  .icon-btn.active{ background:var(--amber); border-color:var(--amber); color:#fff; }
+
+  .privacy-note{
+    font-family:var(--font-mono); font-size:10.5px; color:var(--ink-dim); text-align:center;
+    letter-spacing:0.03em; padding-top:2px;
+  }
+  .privacy-note b{ color:var(--paper-dim); }
+
+  /* ---------- filmstrip ---------- */
+  .filmstrip{
+    display:flex; gap:8px; padding:2px 0 4px; overflow-x:auto;
+  }
+  .filmstrip-item{
+    position:relative; flex:none; width:74px; height:56px; border-radius:6px; overflow:hidden;
+    border:2px solid var(--line); cursor:pointer; background:var(--bg-inset);
+  }
+  .filmstrip-item img{ width:100%; height:100%; object-fit:cover; display:block; opacity:0.85; }
+  .filmstrip-item.active{ border-color:var(--amber); }
+  .filmstrip-item .rm{
+    position:absolute; top:2px; right:2px; width:16px; height:16px; border-radius:50%;
+    background:rgba(0,0,0,0.65); color:#fff; display:flex; align-items:center; justify-content:center;
+    font-size:11px; line-height:1;
+  }
+  .filmstrip-add{
+    flex:none; width:74px; height:56px; border-radius:6px; border:1.5px dashed var(--line);
+    display:flex; align-items:center; justify-content:center; color:var(--ink-dim); cursor:pointer; font-size:20px;
+  }
+
+  /* ---------- side panel ---------- */
+  aside.panel{
+    width:320px; flex:none; border-left:1px solid var(--line-soft);
+    background:var(--bg-raised);
+    display:flex; flex-direction:column; min-height:0;
+  }
+  .panel-scroll{ flex:1; overflow-y:auto; padding:16px 16px 90px; }
+  .panel-header{
+    padding:14px 16px 0; font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.16em;
+    text-transform:uppercase; color:var(--ink-dim);
+  }
+
+  .mode-select{
+    display:flex; background:var(--bg-inset); border:1px solid var(--line); border-radius:9px; padding:4px; margin-bottom:16px;
+  }
+  .mode-select button{
+    flex:1; padding:10px 8px; border:none; background:transparent; color:var(--ink-dim);
+    border-radius:6px; font-size:13px; font-weight:600; cursor:pointer;
+  }
+  .mode-select button.active{ background:var(--amber); color:#fff; }
+
+  .field-row{ display:flex; gap:8px; margin-bottom:10px; }
+  .field-row .btn{ flex:1; justify-content:center; }
+
+  .base-readout{
+    display:flex; align-items:center; gap:10px; padding:9px 11px; border:1px solid var(--line);
+    border-radius:8px; background:var(--bg-inset); margin-bottom:14px; font-size:12px; color:var(--ink-dim);
+  }
+  .base-swatch{ width:22px; height:22px; border-radius:5px; border:1px solid var(--line); flex:none; }
+
+  .section{ border-top:1px solid var(--line-soft); margin-top:6px; }
+  .section:first-of-type{ border-top:none; margin-top:0; }
+  .section-head{
+    display:flex; align-items:center; justify-content:space-between; padding:13px 2px;
+    cursor:pointer; user-select:none;
+  }
+  .section-head h3{
+    margin:0; font-size:13px; font-weight:600; letter-spacing:0.01em; color:var(--paper);
+  }
+  .section-head .chev{ width:14px; height:14px; color:var(--ink-dim); transition:transform .15s; }
+  .section.open .chev{ transform:rotate(180deg); }
+  .section-body{ display:none; padding:2px 2px 14px; }
+  .section.open .section-body{ display:block; }
+
+  .slider-row{ margin-bottom:14px; }
+  .slider-row:last-child{ margin-bottom:2px; }
+  .slider-row .lbl{
+    display:flex; justify-content:space-between; font-size:12px; color:var(--ink-dim); margin-bottom:6px;
+  }
+  .slider-row .lbl span.val{ font-family:var(--font-mono); color:var(--paper); }
+  input[type=range]{
+    width:100%; height:26px; background:transparent; cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-runnable-track{
+    height:3px; background:var(--line); border-radius:2px;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; margin-top:-7px; width:17px; height:17px; border-radius:50%;
+    background:var(--amber); border:2px solid #1c1916; box-shadow:0 1px 3px rgba(0,0,0,0.5);
+  }
+  input[type=range]::-moz-range-track{ height:3px; background:var(--line); border-radius:2px; }
+  input[type=range]::-moz-range-thumb{
+    width:15px; height:15px; border-radius:50%; background:var(--amber); border:2px solid #1c1916;
+  }
+
+  .preset-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin-bottom:16px; }
+  .preset-chip{
+    padding:9px 4px; text-align:center; border:1px solid var(--line); border-radius:7px;
+    background:var(--bg-inset); font-size:11.5px; color:var(--ink-dim); cursor:pointer;
+  }
+  .preset-chip:hover{ border-color:var(--amber-dim); color:var(--ink); }
+  .preset-chip.active{ background:var(--amber); color:#fff; border-color:var(--amber); }
+
+  .histogram-wrap{ margin-bottom:16px; }
+  #histCanvas{ width:100%; height:70px; display:block; background:var(--bg-inset); border:1px solid var(--line); border-radius:7px; }
+
+  .reset-row{ display:flex; gap:8px; margin:6px 0 4px; }
+  .reset-row .btn{ flex:1; justify-content:center; }
+
+  /* ---------- crop overlay ---------- */
+  .crop-overlay{
+    position:absolute; inset:0; z-index:5; display:none;
+  }
+  .crop-overlay.active{ display:block; }
+  .crop-box{
+    position:absolute; border:2px solid var(--amber); box-shadow:0 0 0 2000px rgba(0,0,0,0.55);
+    touch-action:none;
+  }
+  .crop-box .handle{
+    position:absolute; width:16px; height:16px; background:var(--amber); border:2px solid #fff2;
+    border-radius:3px;
+  }
+  .crop-box .handle.nw{ left:-9px; top:-9px; cursor:nwse-resize; }
+  .crop-box .handle.ne{ right:-9px; top:-9px; cursor:nesw-resize; }
+  .crop-box .handle.sw{ left:-9px; bottom:-9px; cursor:nesw-resize; }
+  .crop-box .handle.se{ right:-9px; bottom:-9px; cursor:nwse-resize; }
+  .crop-actions{
+    position:absolute; bottom:14px; left:50%; transform:translateX(-50%);
+    display:flex; gap:8px; z-index:6;
+  }
+
+  /* ---------- bottom action bar (mobile-first anchor even on desktop) ---------- */
+  .bottom-bar{
+    position:sticky; bottom:0; z-index:30;
+    display:flex; gap:10px; padding:12px 16px; border-top:1px solid var(--line-soft);
+    background:linear-gradient(0deg, var(--bg) 60%, rgba(20,18,16,0));
+  }
+  .bottom-bar .btn{ flex:1; justify-content:center; padding:12px; font-size:13.5px; }
+
+  input[type=file]{ display:none; }
+
+  .toast{
+    position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:#241f1b; border:1px solid var(--line); color:var(--ink); padding:10px 16px;
+    border-radius:9px; font-size:12.5px; opacity:0; pointer-events:none; transition:opacity .2s, transform .2s;
+    z-index:100; max-width:88vw; text-align:center; box-shadow:0 8px 26px rgba(0,0,0,0.4);
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  .spinner{
+    width:16px; height:16px; border-radius:50%; border:2px solid rgba(255,255,255,0.25);
+    border-top-color:#fff; animation:spin .7s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* mobile panel behaves as slide-over sheet */
+  .panel-scrim{ display:none; }
+  @media (max-width: 880px){
+    main.workspace{ flex-direction:column; }
+    aside.panel{
+      width:100%; position:fixed; left:0; right:0; bottom:0; top:auto; max-height:78vh;
+      border-left:none; border-top:1px solid var(--line);
+      border-radius:16px 16px 0 0; transform:translateY(100%); transition:transform .25s ease;
+      z-index:60; box-shadow:0 -10px 40px rgba(0,0,0,0.5);
+    }
+    aside.panel.open{ transform:translateY(0); }
+    .panel-scrim{
+      display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:55;
+    }
+    .panel-scrim.show{ display:block; }
+    .panel-drag{ display:flex; justify-content:center; padding:9px 0 3px; }
+    .panel-drag i{ width:36px; height:4px; border-radius:3px; background:var(--line); display:block; }
+    #viewCanvas{ max-height:44vh; }
+    .brand .sub{ display:none; }
+    .btn span.label-full{ display:none; }
+  }
+  @media (min-width: 881px){
+    .panel-drag{ display:none; }
+    .panel-close-btn{ display:none; }
+  }
+
+  .hidden{ display:none !important; }
+  .visually-hidden{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 64 64"><rect class="frame" x="6" y="6" width="52" height="52" rx="6" fill="none" stroke-width="4"/><circle cx="16" cy="12" r="2.6"/><circle cx="32" cy="12" r="2.6"/><circle cx="48" cy="12" r="2.6"/><circle cx="16" cy="52" r="2.6"/><circle cx="32" cy="52" r="2.6"/><circle cx="48" cy="52" r="2.6"/><rect class="gate" x="19" y="21" width="26" height="22" rx="2"/></svg>
+      <div>
+        <h1>Film Positive</h1>
+        <div class="sub">Negative &rarr; Positive, on device</div>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn ghost small" id="btnOpenTop">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3M7 9l5-5 5 5M12 4v13"/></svg>
+        <span class="label-full">Open Negative</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <section class="viewer">
+
+      <div class="viewer-empty" id="dropZone">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.2"/><path d="M21 16l-4.5-4.5a2 2 0 0 0-2.8 0L7 18"/></svg>
+        <h2>Bring your negatives into the light</h2>
+        <p>Drop scans here, choose files, or shoot a negative on a lightbox with your camera. Everything is processed locally &mdash; nothing leaves this device.</p>
+        <div class="empty-actions">
+          <button class="btn primary" id="btnChoose">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3M7 9l5-5 5 5M12 4v13"/></svg>
+            Choose Negative
+          </button>
+          <button class="btn" id="btnCamera">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Use Camera
+          </button>
+        </div>
+      </div>
+
+      <div class="stage hidden" id="stage">
+        <div class="sprocket-rail top" id="railTop"></div>
+        <div class="stage-label left">Negative</div>
+        <div class="stage-label right hidden" id="posLabel">Positive</div>
+        <div class="canvas-wrap" id="canvasWrap">
+          <canvas id="viewCanvas"></canvas>
+          <div class="compare-slider-line" id="compareLine"></div>
+          <div class="compare-slider-handle" id="compareHandle">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M8 5l-6 7 6 7M16 5l6 7-6 7"/></svg>
+          </div>
+          <div class="crop-overlay" id="cropOverlay">
+            <div class="crop-box" id="cropBox">
+              <div class="handle nw"></div><div class="handle ne"></div>
+              <div class="handle sw"></div><div class="handle se"></div>
+            </div>
+            <div class="crop-actions">
+              <button class="btn small" id="cropCancel">Cancel</button>
+              <button class="btn primary small" id="cropApply">Apply Crop</button>
+            </div>
+          </div>
+        </div>
+        <div class="sprocket-rail bottom" id="railBottom"></div>
+      </div>
+
+      <div class="filmstrip hidden" id="filmstrip"></div>
+
+      <div class="viewer-toolbar hidden" id="viewerToolbar">
+        <div class="toggle-group">
+          <button id="tabOriginal">Original</button>
+          <button id="tabPositive" class="active">Positive</button>
+          <button id="tabCompare">Slider</button>
+        </div>
+        <div class="transform-tools">
+          <button class="icon-btn" id="btnRotL" title="Rotate left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+          <button class="icon-btn" id="btnRotR" title="Rotate right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+          <button class="icon-btn" id="btnFlipH" title="Flip horizontal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M17 8l3 4-3 4M7 8l-3 4 3 4"/></svg></button>
+          <button class="icon-btn" id="btnFlipV" title="Flip vertical"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M8 7l4-3 4 3M8 17l4 3 4-3"/></svg></button>
+          <button class="icon-btn" id="btnCrop" title="Crop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2v14a2 2 0 0 0 2 2h14M18 22V8a2 2 0 0 0-2-2H2"/></svg></button>
+          <button class="icon-btn" id="btnSample" title="Sample film base"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/></svg></button>
+        </div>
+      </div>
+
+      <p class="privacy-note hidden" id="privacyNote"><b>Private by design</b> &mdash; all processing happens locally in your browser. Your photos are never uploaded.</p>
+    </section>
+
+    <div class="panel-scrim" id="panelScrim"></div>
+    <aside class="panel" id="panel">
+      <div class="panel-drag" id="panelDrag"><i></i></div>
+      <div class="panel-header">Adjustments</div>
+      <div class="panel-scroll">
+
+        <div class="mode-select">
+          <button id="modeColor" class="active">Color Negative</button>
+          <button id="modeBW">B&amp;W Negative</button>
+        </div>
+
+        <div class="field-row">
+          <button class="btn" id="btnAutoBase">Auto Film Base</button>
+          <button class="btn" id="btnSampleBase">Sample Film Base</button>
+        </div>
+        <div class="base-readout" id="baseReadout">
+          <div class="base-swatch" id="baseSwatch"></div>
+          <span id="baseText">Film base: auto-detecting&hellip;</span>
+        </div>
+
+        <button class="btn primary" id="btnAutoCorrect" style="width:100%; justify-content:center; margin-bottom:14px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M12 2l2.2 6.8H21l-5.6 4.1 2.1 6.9L12 15.8 6.5 19.8l2.1-6.9L3 8.8h6.8z"/></svg>
+          Auto Correct
+        </button>
+
+        <div class="preset-grid" id="presetGrid">
+          <div class="preset-chip" data-preset="natural">Natural</div>
+          <div class="preset-chip" data-preset="warm">Warm</div>
+          <div class="preset-chip" data-preset="cool">Cool</div>
+          <div class="preset-chip" data-preset="bw">B&amp;W</div>
+          <div class="preset-chip" data-preset="flat">Flat / Archive</div>
+          <div class="preset-chip" data-preset="none">None</div>
+        </div>
+
+        <div class="histogram-wrap">
+          <div class="section-head" id="histToggleRow" style="padding-top:0;">
+            <h3>Histogram</h3>
+            <label class="toggle-group" style="padding:2px;">
+              <button id="histToggleBtn" class="small">Show</button>
+            </label>
+          </div>
+          <canvas id="histCanvas" class="hidden" width="300" height="70"></canvas>
+        </div>
+
+        <div class="section open" data-section="basic">
+          <div class="section-head"><h3>Basic</h3><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+          <div class="section-body">
+            <div class="slider-row"><div class="lbl"><span>Exposure</span><span class="val" data-val="exposure">0.0</span></div><input type="range" id="exposure" min="-100" max="100" value="0"></div>
+            <div class="slider-row"><div class="lbl"><span>Contrast</span><span class="val" data-val="contrast">0</span></div><input type="range" id="contrast" min="-100" max="100" value="0"></div>
+            <div class="slider-row"><div class="lbl"><span>Brightness</span><span class="val" data-val="brightness">0</span></div><input type="range" id="brightness" min="-100" max="100" value="0"></div>
+            <div class="slider-row"><div class="lbl"><span>Saturation</span><span class="val" data-val="saturation">0</span></div><input type="range" id="saturation" min="-100" max="100" value="0"></div>
+          </div>
+        </div>
+
+        <div class="section" data-section="color">
+          <div class="section-head"><h3>Color</h3><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+          <div class="section-body">
+            <div class="slider-row"><div class="lbl"><span>Temperature</span><span class="val" data-val="temperature">0</span></div><input type="range" id="temperature" min="-100" max="100" value="0"></div>
+            <div class="slider-row"><div class="lbl"><span>Tint</span><span class="val" data-val="tint">0</span></div><input type="range" id="tint" min="-100" max="100" value="0"></div>
+          </div>
+        </div>
+
+        <div class="section" data-section="tone">
+          <div class="section-head"><h3>Tone</h3><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+          <div class="section-body">
+            <div class="slider-row"><div class="lbl"><span>Black Point</span><span class="val" data-val="blackPoint">0</span></div><input type="range" id="blackPoint" min="0" max="80" value="0"></div>
+            <div class="slider-row"><div class="lbl"><span>White Point</span><span class="val" data-val="whitePoint">255</span></div><input type="range" id="whitePoint" min="175" max="255" value="255"></div>
+            <div class="slider-row"><div class="lbl"><span>Gamma</span><span class="val" data-val="gamma">1.00</span></div><input type="range" id="gamma" min="50" max="200" value="100"></div>
+          </div>
+        </div>
+
+        <div class="section" data-section="advanced">
+          <div class="section-head"><h3>Advanced</h3><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+          <div class="section-body">
+            <div class="slider-row"><div class="lbl"><span>Film Base Strength</span><span class="val" data-val="baseStrength">100</span></div><input type="range" id="baseStrength" min="0" max="150" value="100"></div>
+            <div class="slider-row"><div class="lbl"><span>Red Channel</span><span class="val" data-val="redAdj">0</span></div><input type="range" id="redAdj" min="-100" max="100" value="0"></div>
+            <div class="slider-row"><div class="lbl"><span>Green Channel</span><span class="val" data-val="greenAdj">0</span></div><input type="range" id="greenAdj" min="-100" max="100" value="0"></div>
+            <div class="slider-row"><div class="lbl"><span>Blue Channel</span><span class="val" data-val="blueAdj">0</span></div><input type="range" id="blueAdj" min="-100" max="100" value="0"></div>
+          </div>
+        </div>
+
+        <div class="reset-row">
+          <button class="btn small" id="btnResetAdj">Reset Adjustments</button>
+          <button class="btn small" id="btnResetAll">Reset Everything</button>
+        </div>
+
+        <div class="section" data-section="batch">
+          <div class="section-head"><h3>Batch</h3><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+          <div class="section-body">
+            <p style="font-size:12px; color:var(--ink-dim); line-height:1.5; margin:0 0 10px;">Apply this image's current settings to every negative in your filmstrip, then export each one.</p>
+            <button class="btn" id="btnProcessAll" style="width:100%; justify-content:center;">Process All</button>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="bottom-bar">
+        <button class="btn ghost panel-close-btn" id="btnPanelClose">Done</button>
+        <div style="display:flex; gap:8px; flex:1;">
+          <select id="exportFormat" class="btn small" style="flex:none; padding:9px 8px;">
+            <option value="jpeg">JPEG</option>
+            <option value="png">PNG</option>
+          </select>
+          <button class="btn primary" id="btnSave" style="flex:1; justify-content:center;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Save Positive
+          </button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <button class="btn primary hidden" id="btnAdjustFab" style="position:fixed; right:16px; bottom:16px; z-index:50; border-radius:100px; padding:12px 18px; box-shadow:0 8px 24px rgba(0,0,0,0.5);">Adjust</button>
+</div>
+
+<input type="file" id="fileInput" accept="image/*" multiple>
+<input type="file" id="cameraInput" accept="image/*" capture="environment">
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   State
+   ============================================================ */
+const defaultSettings = () => ({
+  mode: 'color',
+  filmBase: null,          // {r,g,b} 0-255, values of the *negative* film base
+  baseAuto: true,
+  exposure: 0, contrast: 0, brightness: 0, saturation: 0,
+  temperature: 0, tint: 0,
+  blackPoint: 0, whitePoint: 255, gamma: 100,
+  baseStrength: 100, redAdj: 0, greenAdj: 0, blueAdj: 0,
+  rotation: 0, flipH: false, flipV: false,
+  crop: null,              // {x,y,w,h} in source pixel coords
+  preset: 'none'
+});
+
+const state = {
+  images: [],      // {id, name, img(HTMLImageElement), settings}
+  activeId: null,
+  viewMode: 'positive',   // 'original' | 'positive' | 'compare'
+  comparePos: 0.5,
+  showHistogram: false,
+  cropping: false,
+  samplingBase: false,
+  previewMaxDim: 1400,
+  renderToken: 0
+};
+
+function activeImage(){ return state.images.find(i => i.id === state.activeId) || null; }
+
+/* ============================================================
+   DOM refs
+   ============================================================ */
+const $ = sel => document.querySelector(sel);
+const dropZone = $('#dropZone');
+const stage = $('#stage');
+const viewerToolbar = $('#viewerToolbar');
+const filmstripEl = $('#filmstrip');
+const privacyNote = $('#privacyNote');
+const canvas = $('#viewCanvas');
+const ctx = canvas.getContext('2d', { willReadFrequently:true });
+const canvasWrap = $('#canvasWrap');
+const fileInput = $('#fileInput');
+const cameraInput = $('#cameraInput');
+const toastEl = $('#toast');
+const panel = $('#panel');
+const panelScrim = $('#panelScrim');
+const posLabel = $('#posLabel');
+const cropOverlay = $('#cropOverlay');
+const cropBox = $('#cropBox');
+const histCanvas = $('#histCanvas');
+
+function toast(msg, ms){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=> toastEl.classList.remove('show'), ms || 2200);
+}
+
+/* ============================================================
+   File loading
+   ============================================================ */
+function loadFiles(fileList){
+  const files = Array.from(fileList || []).filter(f => f.type.startsWith('image/') || /\.(tif|tiff)$/i.test(f.name));
+  if (!files.length) return;
+  let firstNewId = null;
+  let pending = files.length;
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const id = 'img_' + Math.random().toString(36).slice(2, 10);
+        const rec = { id, name: file.name, img, settings: defaultSettings() };
+        state.images.push(rec);
+        if (!firstNewId) firstNewId = id;
+        pending--;
+        if (pending === 0) {
+          activateImage(firstNewId);
+          renderFilmstrip();
+        }
+      };
+      img.onerror = () => {
+        pending--;
+        toast('Could not read "' + file.name + '" — unsupported or corrupt image.');
+        if (pending === 0 && state.images.length) { activateImage(state.images[0].id); renderFilmstrip(); }
+      };
+      img.src = e.target.result;
+    };
+    reader.onerror = () => { toast('Failed to load ' + file.name); pending--; };
+    reader.readAsDataURL(file);
+  });
+}
+
+function activateImage(id){
+  state.activeId = id;
+  const rec = activeImage();
+  if (!rec) return;
+  dropZone.classList.add('hidden');
+  stage.classList.remove('hidden');
+  viewerToolbar.classList.remove('hidden');
+  privacyNote.classList.remove('hidden');
+  filmstripEl.classList.remove('hidden');
+  $('#btnAdjustFab').classList.remove('hidden');
+  syncControlsFromSettings(rec.settings);
+  if (rec.settings.baseAuto && !rec.settings.filmBase && rec.settings.mode === 'color') {
+    autoDetectFilmBase(rec);
+  }
+  updateBaseReadout(rec);
+  renderFilmstrip();
+  scheduleRender(true);
+}
+
+/* ============================================================
+   Film base estimation
+   ============================================================ */
+function sampleAverage(imgEl, sx, sy, sw, sh){
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(sw));
+  c.height = Math.max(1, Math.round(sh));
+  const cx = c.getContext('2d');
+  cx.drawImage(imgEl, sx, sy, sw, sh, 0, 0, c.width, c.height);
+  const data = cx.getImageData(0, 0, c.width, c.height).data;
+  let r=0,g=0,b=0,n=0;
+  for (let i=0;i<data.length;i+=4){ r+=data[i]; g+=data[i+1]; b+=data[i+2]; n++; }
+  return { r:r/n, g:g/n, b:b/n };
+}
+
+function autoDetectFilmBase(rec){
+  const img = rec.img;
+  const w = img.naturalWidth, h = img.naturalHeight;
+  if (!w || !h) return;
+  // sample a grid of blocks, biased toward the border (rebate usually near edges),
+  // pick the block that is brightest AND relatively uniform (low internal variance).
+  const cols = 6, rows = 6;
+  const bw = w / cols, bh = h / rows;
+  let candidates = [];
+  const c = document.createElement('canvas');
+  c.width = w > 900 ? 900 : w;
+  c.height = Math.round(c.width * (h/w));
+  const cx = c.getContext('2d');
+  cx.drawImage(img, 0, 0, c.width, c.height);
+  const full = cx.getImageData(0,0,c.width,c.height).data;
+  const sbw = c.width/cols, sbh = c.height/rows;
+
+  for (let ry=0; ry<rows; ry++){
+    for (let rx=0; rx<cols; rx++){
+      const isEdge = (rx===0||ry===0||rx===cols-1||ry===rows-1);
+      let r=0,g=0,b=0,n=0;
+      let rs=[],gs=[],bs=[];
+      const x0 = Math.round(rx*sbw), y0 = Math.round(ry*sbh);
+      const x1 = Math.round(x0+sbw), y1 = Math.round(y0+sbh);
+      for (let y=y0; y<y1; y+=2){
+        for (let x=x0; x<x1; x+=2){
+          const idx = (y*c.width+x)*4;
+          const rr=full[idx], gg=full[idx+1], bb=full[idx+2];
+          r+=rr; g+=gg; b+=bb; n++; rs.push(rr); gs.push(gg); bs.push(bb);
+        }
+      }
+      if (!n) continue;
+      r/=n; g/=n; b/=n;
+      let varSum = 0;
+      for (let i=0;i<rs.length;i++){ varSum += (rs[i]-r)**2 + (gs[i]-g)**2 + (bs[i]-b)**2; }
+      const variance = varSum / n;
+      const brightness = (r+g+b)/3;
+      candidates.push({ r,g,b, variance, brightness, isEdge });
+    }
+  }
+  if (!candidates.length) return;
+  // score: prefer bright + uniform + edge-adjacent
+  candidates.forEach(c => {
+    c.score = brightnessScore(c);
+  });
+  function brightnessScore(c){
+    return (c.brightness/255)*1.6 - (c.variance/4000) + (c.isEdge?0.35:0);
+  }
+  candidates.sort((a,b)=> b.score - a.score);
+  const best = candidates[0];
+  rec.settings.filmBase = { r: Math.round(best.r), g: Math.round(best.g), b: Math.round(best.b) };
+  rec.settings.baseAuto = true;
+}
+
+let samplePickHandler = null;
+function beginSampleFilmBase(){
+  const rec = activeImage();
+  if (!rec) return;
+  state.samplingBase = true;
+  canvas.style.cursor = 'crosshair';
+  toast('Tap on an unexposed area of the film (the rebate) to sample it.', 3200);
+  samplePickHandler = (evt) => {
+    const rectEl = canvas.getBoundingClientRect();
+    const cxPos = (evt.touches ? evt.touches[0].clientX : evt.clientX) - rectEl.left;
+    const cyPos = (evt.touches ? evt.touches[0].clientY : evt.clientY) - rectEl.top;
+    const px = cxPos / rectEl.width * canvas.width;
+    const py = cyPos / rectEl.height * canvas.height;
+    const d = ctx.getImageData(Math.max(0,Math.min(canvas.width-3,px-3)), Math.max(0,Math.min(canvas.height-3,py-3)), 6, 6).data;
+    let r=0,g=0,b=0,n=0;
+    for (let i=0;i<d.length;i+=4){ r+=d[i]; g+=d[i+1]; b+=d[i+2]; n++; }
+    // note: canvas currently shows the ORIGINAL negative (we ensure that before sampling)
+    rec.settings.filmBase = { r: Math.round(r/n), g: Math.round(g/n), b: Math.round(b/n) };
+    rec.settings.baseAuto = false;
+    updateBaseReadout(rec);
+    endSampleFilmBase();
+    scheduleRender(true);
+    toast('Film base sampled.');
+  };
+  // force original view so the user samples the raw negative
+  setViewMode('original');
+  canvas.addEventListener('click', samplePickHandler, { once:true });
+}
+function endSampleFilmBase(){
+  state.samplingBase = false;
+  canvas.style.cursor = '';
+}
+
+function updateBaseReadout(rec){
+  const fb = rec.settings.filmBase;
+  const sw = $('#baseSwatch');
+  const txt = $('#baseText');
+  if (rec.settings.mode !== 'color') {
+    txt.textContent = 'Film base not used in B&W mode';
+    sw.style.background = '#555';
+    return;
+  }
+  if (!fb) {
+    txt.textContent = 'Film base: not yet sampled';
+    sw.style.background = '#555';
+    return;
+  }
+  sw.style.background = `rgb(${fb.r},${fb.g},${fb.b})`;
+  txt.textContent = (rec.settings.baseAuto ? 'Auto base ' : 'Sampled base ') + `— R${fb.r} G${fb.g} B${fb.b}`;
+}
+
+/* ============================================================
+   Core pixel pipeline
+   ============================================================ */
+function clamp8(v){ return v<0?0:v>255?255:v; }
+
+// Build lookup tables for speed given current settings (excluding film-base which is per-pixel-independent scalar anyway)
+function buildAdjustState(s){
+  const exposureMul = Math.pow(2, s.exposure/50);           // -100..100 -> ~0.25x..4x-ish but tamed
+  const contrastAmt = s.contrast/100;                        // -1..1
+  const brightnessAdd = s.brightness * 1.2;                  // -120..120
+  const satMul = 1 + s.saturation/100;                        // 0..2
+  const tempAdd = s.temperature/100 * 40;                     // shifts R vs B
+  const tintAdd = s.tint/100 * 40;                             // shifts G vs M
+  const gammaVal = s.gamma/100;                                 // 0.5..2.0
+  const blackPoint = s.blackPoint;
+  const whitePoint = s.whitePoint;
+  const baseStrength = s.baseStrength/100;
+  return { exposureMul, contrastAmt, brightnessAdd, satMul, tempAdd, tintAdd, gammaVal, blackPoint, whitePoint, baseStrength };
+}
+
+function processImageData(imageData, settings){
+  const data = imageData.data;
+  const s = settings;
+  const A = buildAdjustState(s);
+  const isColor = s.mode === 'color';
+  const fb = s.filmBase || { r: 200, g: 130, b: 90 };
+
+  // film base neutralization denominators (avoid div by zero)
+  const invBaseR = Math.max(8, 255 - fb.r);
+  const invBaseG = Math.max(8, 255 - fb.g);
+  const invBaseB = Math.max(8, 255 - fb.b);
+  const bs = A.baseStrength;
+
+  // channel trim from Advanced panel
+  const rTrim = s.redAdj * 1.2;
+  const gTrim = s.greenAdj * 1.2;
+  const bTrim = s.blueAdj * 1.2;
+
+  const bp = A.blackPoint, wp = Math.max(bp+5, A.whitePoint);
+  const range = wp - bp;
+  const gammaInv = 1/A.gammaVal;
+
+  for (let i=0; i<data.length; i+=4){
+    let r = data[i], g = data[i+1], b = data[i+2];
+
+    if (isColor){
+      // 1. invert
+      let ir = 255 - r, ig = 255 - g, ib = 255 - b;
+      // 2. neutralize film base: scale so the (inverted) base maps to white
+      const nr = (ir / invBaseR) * 255;
+      const ng = (ig / invBaseG) * 255;
+      const nb = (ib / invBaseB) * 255;
+      // blend by base strength (100% = fully corrected, 0% = plain inversion)
+      r = ir + (nr - ir) * bs;
+      g = ig + (ng - ig) * bs;
+      b = ib + (nb - ib) * bs;
+    } else {
+      r = 255 - r; g = 255 - g; b = 255 - b;
+    }
+
+    // 3. tonal stretch (black/white point) + gamma
+    r = ((r - bp) / range) * 255;
+    g = ((g - bp) / range) * 255;
+    b = ((b - bp) / range) * 255;
+    r = 255 * Math.pow(Math.max(0,r)/255, gammaInv);
+    g = 255 * Math.pow(Math.max(0,g)/255, gammaInv);
+    b = 255 * Math.pow(Math.max(0,b)/255, gammaInv);
+
+    // 4. per-channel trim (Advanced)
+    r += rTrim; g += gTrim; b += bTrim;
+
+    // 5. exposure (multiplicative) + brightness (additive)
+    r = r * A.exposureMul + A.brightnessAdd;
+    g = g * A.exposureMul + A.brightnessAdd;
+    b = b * A.exposureMul + A.brightnessAdd;
+
+    // 6. contrast (around midpoint)
+    r = (r-128)*(1+A.contrastAmt) + 128;
+    g = (g-128)*(1+A.contrastAmt) + 128;
+    b = (b-128)*(1+A.contrastAmt) + 128;
+
+    // 7. temperature / tint
+    r += A.tempAdd; b -= A.tempAdd;
+    g += A.tintAdd; b -= A.tintAdd*0.5; r -= A.tintAdd*0.5;
+
+    // 8. saturation
+    if (isColor && A.satMul !== 1){
+      const lum = 0.299*r + 0.587*g + 0.114*b;
+      r = lum + (r-lum)*A.satMul;
+      g = lum + (g-lum)*A.satMul;
+      b = lum + (b-lum)*A.satMul;
+    }
+
+    data[i]   = clamp8(r);
+    data[i+1] = clamp8(g);
+    data[i+2] = clamp8(b);
+  }
+  return imageData;
+}
+
+function autoToneStretch(rec){
+  // Run inversion at low strength scan to find good black/white points automatically.
+  const img = rec.img;
+  const w = 260, h = Math.max(1, Math.round(260 * img.naturalHeight/img.naturalWidth));
+  const c = document.createElement('canvas'); c.width=w; c.height=h;
+  const cx = c.getContext('2d');
+  applyGeometryTransform(cx, img, rec.settings, w, h);
+  let id = cx.getImageData(0,0,w,h);
+  const probe = { ...rec.settings, blackPoint:0, whitePoint:255, gamma:100, exposure:0, contrast:0, brightness:0, saturation:0, temperature:0, tint:0, redAdj:0, greenAdj:0, blueAdj:0 };
+  id = processImageData(id, probe);
+  const data = id.data;
+  const hist = new Array(256).fill(0);
+  for (let i=0;i<data.length;i+=4){
+    const lum = Math.round(0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2]);
+    hist[lum]++;
+  }
+  const total = w*h;
+  let cum = 0, lo = 0, hi = 255;
+  const loClip = total * 0.006, hiClip = total * 0.006;
+  for (let v=0; v<256; v++){ cum += hist[v]; if (cum > loClip){ lo = v; break; } }
+  cum = 0;
+  for (let v=255; v>=0; v--){ cum += hist[v]; if (cum > hiClip){ hi = v; break; } }
+  if (hi - lo < 30) { lo = Math.max(0,lo-15); hi = Math.min(255,hi+15); }
+  rec.settings.blackPoint = clampNum(lo, 0, 80);
+  rec.settings.whitePoint = clampNum(hi, 175, 255);
+}
+
+function clampNum(v,a,b){ return Math.max(a, Math.min(b, v)); }
+
+/* ============================================================
+   Geometry (rotate / flip / crop)
+   ============================================================ */
+function applyGeometryTransform(targetCtx, img, settings, outW, outH){
+  const rot = ((settings.rotation % 360) + 360) % 360;
+  let sx=0, sy=0, sw=img.naturalWidth, sh=img.naturalHeight;
+  if (settings.crop){
+    sx = settings.crop.x; sy = settings.crop.y; sw = settings.crop.w; sh = settings.crop.h;
+  }
+  targetCtx.save();
+  targetCtx.clearRect(0,0,outW,outH);
+  targetCtx.translate(outW/2, outH/2);
+  targetCtx.rotate(rot * Math.PI/180);
+  targetCtx.scale(settings.flipH ? -1 : 1, settings.flipV ? -1 : 1);
+  const drawW = (rot===90||rot===270) ? outH : outW;
+  const drawH = (rot===90||rot===270) ? outW : outH;
+  targetCtx.drawImage(img, sx, sy, sw, sh, -drawW/2, -drawH/2, drawW, drawH);
+  targetCtx.restore();
+}
+
+function outputDims(rec, maxDim){
+  const s = rec.settings;
+  let w = s.crop ? s.crop.w : rec.img.naturalWidth;
+  let h = s.crop ? s.crop.h : rec.img.naturalHeight;
+  if (s.rotation % 180 !== 0) { const t = w; w = h; h = t; }
+  if (maxDim && Math.max(w,h) > maxDim){
+    const scale = maxDim / Math.max(w,h);
+    w = Math.round(w*scale); h = Math.round(h*scale);
+  }
+  return { w: Math.max(1,Math.round(w)), h: Math.max(1,Math.round(h)) };
+}
+
+/* ============================================================
+   Render pipeline (preview)
+   ============================================================ */
+let renderRAF = null;
+function scheduleRender(immediate){
+  if (immediate){ doRender(); return; }
+  if (renderRAF) cancelAnimationFrame(renderRAF);
+  renderRAF = requestAnimationFrame(doRender);
+}
+
+function doRender(){
+  const rec = activeImage();
+  if (!rec) return;
+  const dims = outputDims(rec, state.previewMaxDim);
+  canvas.width = dims.w; canvas.height = dims.h;
+
+  const showOriginal = (state.viewMode === 'original') || state.samplingBase;
+
+  if (showOriginal){
+    applyGeometryTransform(ctx, rec.img, rec.settings, dims.w, dims.h);
+    posLabel.classList.add('hidden');
+    stage.classList.remove('compare-active');
+  } else if (state.viewMode === 'compare'){
+    stage.classList.add('compare-active');
+    // draw positive fully, then draw original clipped to left of slider line
+    const off = document.createElement('canvas'); off.width=dims.w; off.height=dims.h;
+    const offCtx = off.getContext('2d');
+    applyGeometryTransform(offCtx, rec.img, rec.settings, dims.w, dims.h);
+    let id = offCtx.getImageData(0,0,dims.w,dims.h);
+    id = processImageData(id, rec.settings);
+    ctx.putImageData(id, 0, 0);
+
+    const origCanvas = document.createElement('canvas'); origCanvas.width=dims.w; origCanvas.height=dims.h;
+    applyGeometryTransform(origCanvas.getContext('2d'), rec.img, rec.settings, dims.w, dims.h);
+    const splitX = Math.round(dims.w * state.comparePos);
+    ctx.drawImage(origCanvas, 0, 0, splitX, dims.h, 0, 0, splitX, dims.h);
+    positionCompareLine();
+    posLabel.classList.remove('hidden');
+  } else {
+    stage.classList.remove('compare-active');
+    applyGeometryTransform(ctx, rec.img, rec.settings, dims.w, dims.h);
+    let id = ctx.getImageData(0,0,dims.w,dims.h);
+    id = processImageData(id, rec.settings);
+    ctx.putImageData(id, 0, 0);
+    posLabel.classList.remove('hidden');
+  }
+
+  if (state.showHistogram) drawHistogram();
+}
+
+function positionCompareLine(){
+  const line = $('#compareLine'), handle = $('#compareHandle');
+  const rect = canvas.getBoundingClientRect();
+  const wrapRect = canvasWrap.getBoundingClientRect();
+  const x = (rect.left - wrapRect.left) + rect.width * state.comparePos;
+  line.style.left = x + 'px';
+  line.style.top = (rect.top - wrapRect.top) + 'px';
+  line.style.height = rect.height + 'px';
+  handle.style.left = x + 'px';
+  handle.style.top = (rect.top - wrapRect.top + rect.height/2) + 'px';
+}
+
+/* compare slider drag */
+(function setupCompareDrag(){
+  let dragging = false;
+  function onDown(e){
+    if (state.viewMode !== 'compare') return;
+    dragging = true;
+    onMove(e);
+  }
+  function onMove(e){
+    if (!dragging) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    state.comparePos = clampNum(x / rect.width, 0, 1);
+    scheduleRender(true);
+    e.preventDefault && e.preventDefault();
+  }
+  function onUp(){ dragging = false; }
+  canvasWrap.addEventListener('mousedown', onDown);
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+  canvasWrap.addEventListener('touchstart', onDown, {passive:false});
+  window.addEventListener('touchmove', onMove, {passive:false});
+  window.addEventListener('touchend', onUp);
+})();
+
+/* ============================================================
+   Histogram
+   ============================================================ */
+function drawHistogram(){
+  const hctx = histCanvas.getContext('2d');
+  const w = histCanvas.width, h = histCanvas.height;
+  hctx.clearRect(0,0,w,h);
+  let id;
+  try { id = ctx.getImageData(0,0,canvas.width,canvas.height); } catch(e){ return; }
+  const data = id.data;
+  const rH = new Array(256).fill(0), gH = new Array(256).fill(0), bH = new Array(256).fill(0);
+  const step = 4 * Math.max(1, Math.floor(data.length/4/20000));
+  for (let i=0;i<data.length;i+=step){ rH[data[i]]++; gH[data[i+1]]++; bH[data[i+2]]++; }
+  const maxV = Math.max(1, ...rH, ...gH, ...bH);
+  function plot(hist, color){
+    hctx.beginPath();
+    hctx.moveTo(0,h);
+    for (let v=0; v<256; v++){
+      const x = v/255*w;
+      const y = h - (hist[v]/maxV)*h;
+      hctx.lineTo(x,y);
+    }
+    hctx.lineTo(w,h); hctx.closePath();
+    hctx.fillStyle = color; hctx.fill();
+  }
+  hctx.globalCompositeOperation = 'lighter';
+  plot(rH, 'rgba(255,80,80,0.55)');
+  plot(gH, 'rgba(90,220,120,0.5)');
+  plot(bH, 'rgba(90,140,255,0.55)');
+  hctx.globalCompositeOperation = 'source-over';
+}
+
+/* ============================================================
+   UI wiring — sliders / sections / mode / presets
+   ============================================================ */
+const sliderIds = ['exposure','contrast','brightness','saturation','temperature','tint','blackPoint','whitePoint','gamma','baseStrength','redAdj','greenAdj','blueAdj'];
+const sliderFormat = {
+  gamma: v => (v/100).toFixed(2),
+  exposure: v => (v/33).toFixed(1),
+};
+
+let liveRenderTimer = null;
+sliderIds.forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => {
+    const rec = activeImage(); if (!rec) return;
+    rec.settings[id] = Number(el.value);
+    rec.settings.preset = 'custom';
+    updatePresetActive('none');
+    updateValLabel(id, el.value);
+    // lower preview res while dragging for perf
+    state.previewMaxDim = 700;
+    clearTimeout(liveRenderTimer);
+    scheduleRender(true);
+    liveRenderTimer = setTimeout(() => { state.previewMaxDim = 1400; scheduleRender(true); }, 220);
+  });
+});
+
+function updateValLabel(id, raw){
+  const el = document.querySelector(`[data-val="${id}"]`);
+  if (!el) return;
+  el.textContent = sliderFormat[id] ? sliderFormat[id](raw) : raw;
+}
+
+function syncControlsFromSettings(s){
+  sliderIds.forEach(id => {
+    const el = document.getElementById(id);
+    el.value = s[id];
+    updateValLabel(id, s[id]);
+  });
+  $('#modeColor').classList.toggle('active', s.mode==='color');
+  $('#modeBW').classList.toggle('active', s.mode==='bw');
+  updatePresetActive(s.preset || 'none');
+}
+
+// collapsible sections
+document.querySelectorAll('.section-head').forEach(head => {
+  head.addEventListener('click', () => {
+    head.parentElement.classList.toggle('open');
+  });
+});
+
+// mode select
+$('#modeColor').addEventListener('click', () => setMode('color'));
+$('#modeBW').addEventListener('click', () => setMode('bw'));
+function setMode(mode){
+  const rec = activeImage(); if (!rec) return;
+  rec.settings.mode = mode;
+  $('#modeColor').classList.toggle('active', mode==='color');
+  $('#modeBW').classList.toggle('active', mode==='bw');
+  if (mode==='color' && !rec.settings.filmBase) autoDetectFilmBase(rec);
+  updateBaseReadout(rec);
+  scheduleRender(true);
+}
+
+// presets
+const PRESETS = {
+  natural:{ exposure:0, contrast:8, brightness:0, saturation:5, temperature:0, tint:0, gamma:105 },
+  warm:{ exposure:2, contrast:6, brightness:0, saturation:10, temperature:18, tint:-4, gamma:105 },
+  cool:{ exposure:0, contrast:6, brightness:0, saturation:6, temperature:-16, tint:4, gamma:105 },
+  bw:{ mode:'bw', exposure:0, contrast:14, brightness:0, saturation:-100, gamma:108 },
+  flat:{ exposure:0, contrast:-10, brightness:0, saturation:-8, temperature:0, tint:0, gamma:98 },
+  none:{}
+};
+document.querySelectorAll('.preset-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const rec = activeImage(); if (!rec) return;
+    const name = chip.dataset.preset;
+    const p = PRESETS[name];
+    if (name !== 'none'){
+      Object.assign(rec.settings, p);
+      if (p.mode) { setMode(p.mode); }
+    }
+    rec.settings.preset = name;
+    syncControlsFromSettings(rec.settings);
+    updateBaseReadout(rec);
+    scheduleRender(true);
+  });
+});
+function updatePresetActive(name){
+  document.querySelectorAll('.preset-chip').forEach(c => c.classList.toggle('active', c.dataset.preset===name));
+}
+
+// histogram toggle
+$('#histToggleBtn').addEventListener('click', () => {
+  state.showHistogram = !state.showHistogram;
+  histCanvas.classList.toggle('hidden', !state.showHistogram);
+  $('#histToggleBtn').textContent = state.showHistogram ? 'Hide' : 'Show';
+  if (state.showHistogram) drawHistogram();
+});
+
+// auto correct
+$('#btnAutoCorrect').addEventListener('click', () => {
+  const rec = activeImage(); if (!rec) return;
+  if (rec.settings.mode === 'color' && (!rec.settings.filmBase || rec.settings.baseAuto)) {
+    autoDetectFilmBase(rec);
+  }
+  rec.settings.baseStrength = 100;
+  autoToneStretch(rec);
+  rec.settings.contrast = 6;
+  rec.settings.saturation = rec.settings.mode==='color' ? 8 : -100;
+  rec.settings.gamma = 106;
+  rec.settings.exposure = 0; rec.settings.brightness = 0;
+  rec.settings.temperature = 0; rec.settings.tint = 0;
+  rec.settings.redAdj = 0; rec.settings.greenAdj = 0; rec.settings.blueAdj = 0;
+  rec.settings.preset = 'custom';
+  syncControlsFromSettings(rec.settings);
+  updateBaseReadout(rec);
+  scheduleRender(true);
+  toast('Auto correction applied.');
+});
+
+// reset
+$('#btnResetAdj').addEventListener('click', () => {
+  const rec = activeImage(); if (!rec) return;
+  const fb = rec.settings.filmBase, mode = rec.settings.mode, rot=rec.settings.rotation, fh=rec.settings.flipH, fv=rec.settings.flipV, crop=rec.settings.crop, baseAuto = rec.settings.baseAuto;
+  rec.settings = defaultSettings();
+  rec.settings.filmBase = fb; rec.settings.mode = mode; rec.settings.rotation = rot;
+  rec.settings.flipH = fh; rec.settings.flipV = fv; rec.settings.crop = crop; rec.settings.baseAuto = baseAuto;
+  syncControlsFromSettings(rec.settings);
+  updateBaseReadout(rec);
+  scheduleRender(true);
+});
+$('#btnResetAll').addEventListener('click', () => {
+  const rec = activeImage(); if (!rec) return;
+  rec.settings = defaultSettings();
+  autoDetectFilmBase(rec);
+  syncControlsFromSettings(rec.settings);
+  updateBaseReadout(rec);
+  scheduleRender(true);
+  toast('Reset to original.');
+});
+
+/* ============================================================
+   View toggles (Original / Positive / Compare)
+   ============================================================ */
+function setViewMode(mode){
+  state.viewMode = mode;
+  $('#tabOriginal').classList.toggle('active', mode==='original');
+  $('#tabPositive').classList.toggle('active', mode==='positive');
+  $('#tabCompare').classList.toggle('active', mode==='compare');
+  scheduleRender(true);
+}
+$('#tabOriginal').addEventListener('click', () => setViewMode('original'));
+$('#tabPositive').addEventListener('click', () => setViewMode('positive'));
+$('#tabCompare').addEventListener('click', () => setViewMode('compare'));
+
+/* ============================================================
+   Transform tools
+   ============================================================ */
+$('#btnRotL').addEventListener('click', () => { const r=activeImage(); if(!r) return; r.settings.rotation = (r.settings.rotation - 90 + 360) % 360; r.settings.crop=null; scheduleRender(true); });
+$('#btnRotR').addEventListener('click', () => { const r=activeImage(); if(!r) return; r.settings.rotation = (r.settings.rotation + 90) % 360; r.settings.crop=null; scheduleRender(true); });
+$('#btnFlipH').addEventListener('click', () => { const r=activeImage(); if(!r) return; r.settings.flipH = !r.settings.flipH; scheduleRender(true); });
+$('#btnFlipV').addEventListener('click', () => { const r=activeImage(); if(!r) return; r.settings.flipV = !r.settings.flipV; scheduleRender(true); });
+$('#btnSample').addEventListener('click', () => { beginSampleFilmBase(); });
+$('#btnSampleBase').addEventListener('click', () => { beginSampleFilmBase(); });
+$('#btnAutoBase').addEventListener('click', () => {
+  const rec = activeImage(); if (!rec) return;
+  autoDetectFilmBase(rec);
+  updateBaseReadout(rec);
+  scheduleRender(true);
+  toast('Film base auto-detected.');
+});
+
+/* ---- crop ---- */
+$('#btnCrop').addEventListener('click', startCrop);
+let cropState = null;
+function startCrop(){
+  const rec = activeImage(); if (!rec) return;
+  setViewMode('original');
+  state.cropping = true;
+  cropOverlay.classList.add('active');
+  const rect = canvas.getBoundingClientRect();
+  const margin = { x: rect.width*0.12, y: rect.height*0.12 };
+  cropState = { x: margin.x, y: margin.y, w: rect.width - margin.x*2, h: rect.height - margin.y*2 };
+  layoutCropBox();
+}
+function layoutCropBox(){
+  cropBox.style.left = cropState.x + 'px';
+  cropBox.style.top = cropState.y + 'px';
+  cropBox.style.width = cropState.w + 'px';
+  cropBox.style.height = cropState.h + 'px';
+}
+(function setupCropDrag(){
+  let mode=null, startX=0, startY=0, orig=null;
+  cropBox.addEventListener('mousedown', e => beginDrag(e, e.target.classList.contains('handle') ? [...e.target.classList].find(c=>c!=='handle') : 'move'));
+  cropBox.addEventListener('touchstart', e => beginDrag(e, e.target.classList.contains('handle') ? [...e.target.classList].find(c=>c!=='handle') : 'move'), {passive:false});
+  function beginDrag(e, m){
+    if (!state.cropping) return;
+    mode = m;
+    const pt = e.touches ? e.touches[0] : e;
+    startX = pt.clientX; startY = pt.clientY;
+    orig = { ...cropState };
+    e.preventDefault && e.preventDefault();
+    e.stopPropagation();
+  }
+  window.addEventListener('mousemove', drag);
+  window.addEventListener('touchmove', drag, {passive:false});
+  window.addEventListener('mouseup', () => mode=null);
+  window.addEventListener('touchend', () => mode=null);
+  function drag(e){
+    if (!mode) return;
+    const pt = e.touches ? e.touches[0] : e;
+    const dx = pt.clientX - startX, dy = pt.clientY - startY;
+    const rect = canvas.getBoundingClientRect();
+    let {x,y,w,h} = orig;
+    if (mode==='move'){ x=orig.x+dx; y=orig.y+dy; }
+    else if (mode==='se'){ w=orig.w+dx; h=orig.h+dy; }
+    else if (mode==='sw'){ x=orig.x+dx; w=orig.w-dx; h=orig.h+dy; }
+    else if (mode==='ne'){ y=orig.y+dy; w=orig.w+dx; h=orig.h-dy; }
+    else if (mode==='nw'){ x=orig.x+dx; y=orig.y+dy; w=orig.w-dx; h=orig.h-dy; }
+    x = clampNum(x, 0, rect.width-20); y = clampNum(y, 0, rect.height-20);
+    w = clampNum(w, 40, rect.width-x); h = clampNum(h, 40, rect.height-y);
+    cropState = {x,y,w,h};
+    layoutCropBox();
+    e.preventDefault && e.preventDefault();
+  }
+})();
+$('#cropCancel').addEventListener('click', () => { state.cropping=false; cropOverlay.classList.remove('active'); setViewMode('positive'); });
+$('#cropApply').addEventListener('click', () => {
+  const rec = activeImage(); if (!rec) return;
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
+  const c = {
+    x: Math.round(cropState.x*scaleX), y: Math.round(cropState.y*scaleY),
+    w: Math.round(cropState.w*scaleX), h: Math.round(cropState.h*scaleY)
+  };
+  // map current (possibly rotated) canvas coords back to source-space crop
+  const rot = ((rec.settings.rotation%360)+360)%360;
+  const prevCrop = rec.settings.crop;
+  const baseW = prevCrop ? prevCrop.w : rec.img.naturalWidth;
+  const baseH = prevCrop ? prevCrop.h : rec.img.naturalHeight;
+  const baseX = prevCrop ? prevCrop.x : 0;
+  const baseY = prevCrop ? prevCrop.y : 0;
+  let srcX, srcY, srcW, srcH;
+  if (rot===0){ srcX=baseX+c.x; srcY=baseY+c.y; srcW=c.w; srcH=c.h; }
+  else if (rot===180){ srcX=baseX+(baseW-c.x-c.w); srcY=baseY+(baseH-c.y-c.h); srcW=c.w; srcH=c.h; }
+  else if (rot===90){ srcX=baseX+c.y; srcY=baseY+(baseH-c.x-c.w); srcW=c.h; srcH=c.w; }
+  else { srcX=baseX+(baseW-c.y-c.h); srcY=baseY+c.x; srcW=c.h; srcH=c.w; }
+  rec.settings.crop = { x:Math.max(0,srcX), y:Math.max(0,srcY), w:Math.max(1,srcW), h:Math.max(1,srcH) };
+  state.cropping = false;
+  cropOverlay.classList.remove('active');
+  setViewMode('positive');
+});
+
+/* ============================================================
+   Filmstrip
+   ============================================================ */
+function renderFilmstrip(){
+  filmstripEl.innerHTML = '';
+  state.images.forEach(rec => {
+    const item = document.createElement('div');
+    item.className = 'filmstrip-item' + (rec.id===state.activeId ? ' active' : '');
+    const img = document.createElement('img');
+    img.src = rec.img.src;
+    item.appendChild(img);
+    const rm = document.createElement('div');
+    rm.className = 'rm'; rm.textContent = '×';
+    rm.addEventListener('click', (e) => { e.stopPropagation(); removeImage(rec.id); });
+    item.appendChild(rm);
+    item.addEventListener('click', () => activateImage(rec.id));
+    filmstripEl.appendChild(item);
+  });
+  const add = document.createElement('div');
+  add.className = 'filmstrip-add';
+  add.textContent = '+';
+  add.addEventListener('click', () => fileInput.click());
+  filmstripEl.appendChild(add);
+}
+function removeImage(id){
+  const idx = state.images.findIndex(i => i.id===id);
+  if (idx<0) return;
+  state.images.splice(idx,1);
+  if (state.activeId === id){
+    if (state.images.length) activateImage(state.images[0].id);
+    else {
+      state.activeId = null;
+      stage.classList.add('hidden');
+      viewerToolbar.classList.add('hidden');
+      filmstripEl.classList.add('hidden');
+      privacyNote.classList.add('hidden');
+      $('#btnAdjustFab').classList.add('hidden');
+      dropZone.classList.remove('hidden');
+    }
+  }
+  renderFilmstrip();
+}
+
+/* ============================================================
+   Export
+   ============================================================ */
+function renderFullRes(rec){
+  const dims = outputDims(rec, null); // no cap — full resolution
+  const c = document.createElement('canvas'); c.width=dims.w; c.height=dims.h;
+  const cx = c.getContext('2d');
+  applyGeometryTransform(cx, rec.img, rec.settings, dims.w, dims.h);
+  let id = cx.getImageData(0,0,dims.w,dims.h);
+  id = processImageData(id, rec.settings);
+  cx.putImageData(id,0,0);
+  return c;
+}
+
+function filenameFor(rec, ext){
+  const base = rec.name.replace(/\.[^.]+$/, '');
+  return base + '-positive.' + ext;
+}
+
+async function exportImage(rec, showSpinner){
+  const format = $('#exportFormat').value;
+  const mime = format==='png' ? 'image/png' : 'image/jpeg';
+  const ext = format==='png' ? 'png' : 'jpg';
+  let c;
+  try {
+    c = renderFullRes(rec);
+  } catch(err){
+    toast('This image is too large to process at full resolution on this device.');
+    throw err;
+  }
+  const quality = format==='jpeg' ? 0.93 : undefined;
+  return new Promise((resolve, reject) => {
+    c.toBlob(blob => {
+      if (!blob) { reject(new Error('export failed')); return; }
+      const url = URL.createObjectURL(blob);
+      const filename = filenameFor(rec, ext);
+      if (navigator.canShare && navigator.canShare({ files: [new File([blob], filename, {type:mime})] })) {
+        navigator.share({ files: [new File([blob], filename, {type:mime})], title: filename })
+          .catch(()=> triggerDownload(url, filename))
+          .finally(() => resolve());
+      } else {
+        triggerDownload(url, filename);
+        resolve();
+      }
+    }, mime, quality);
+  });
+}
+function triggerDownload(url, filename){
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=> URL.revokeObjectURL(url), 4000);
+}
+
+$('#btnSave').addEventListener('click', async () => {
+  const rec = activeImage(); if (!rec) return;
+  const btn = $('#btnSave');
+  const original = btn.innerHTML;
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Saving…';
+  try {
+    await exportImage(rec);
+    toast('Saved ' + filenameFor(rec, $('#exportFormat').value==='png'?'png':'jpg'));
+  } catch(e){
+    toast('Could not export this image.');
+  } finally {
+    btn.disabled = false; btn.innerHTML = original;
+  }
+});
+
+$('#btnProcessAll').addEventListener('click', async () => {
+  if (!state.images.length) return;
+  const activeSettings = activeImage() ? JSON.parse(JSON.stringify(activeImage().settings)) : null;
+  if (!activeSettings) return;
+  const btn = $('#btnProcessAll');
+  const original = btn.textContent;
+  btn.disabled = true;
+  let i = 0;
+  for (const rec of state.images){
+    i++;
+    btn.textContent = `Processing ${i}/${state.images.length}…`;
+    const fb = rec.settings.filmBase;
+    rec.settings = JSON.parse(JSON.stringify(activeSettings));
+    if (rec.id !== state.activeId && !rec.settings.baseAuto === false) {
+      // keep each image's own auto-detected base unless the source used manual sampling
+    }
+    if (activeSettings.baseAuto && rec.id !== state.activeId) {
+      autoDetectFilmBase(rec); // re-detect per-image since bases vary between negatives
+    }
+    try { await exportImage(rec); } catch(e){ /* continue */ }
+    await new Promise(r => setTimeout(r, 60));
+  }
+  btn.disabled = false; btn.textContent = original;
+  toast('Processed and saved ' + state.images.length + ' image' + (state.images.length>1?'s':'') + '.');
+});
+
+/* ============================================================
+   Open / drag&drop / camera / paste
+   ============================================================ */
+$('#btnChoose').addEventListener('click', () => fileInput.click());
+$('#btnOpenTop').addEventListener('click', () => fileInput.click());
+$('#btnCamera').addEventListener('click', () => cameraInput.click());
+fileInput.addEventListener('change', e => { loadFiles(e.target.files); fileInput.value=''; });
+cameraInput.addEventListener('change', e => { loadFiles(e.target.files); cameraInput.value=''; });
+
+['dragenter','dragover'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.add('dragover'); }));
+['dragleave','drop'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.remove('dragover'); }));
+dropZone.addEventListener('drop', e => { loadFiles(e.dataTransfer.files); });
+document.addEventListener('dragover', e => { if (e.target.closest && !e.target.closest('#dropZone')) e.preventDefault(); });
+document.addEventListener('drop', e => { if (!e.target.closest('#dropZone')) e.preventDefault(); });
+
+document.addEventListener('paste', e => {
+  const items = e.clipboardData && e.clipboardData.items;
+  if (!items) return;
+  const files = [];
+  for (const it of items) if (it.type && it.type.startsWith('image/')) files.push(it.getAsFile());
+  if (files.length) loadFiles(files);
+});
+
+/* ============================================================
+   Mobile panel sheet
+   ============================================================ */
+function openPanel(){ panel.classList.add('open'); panelScrim.classList.add('show'); }
+function closePanel(){ panel.classList.remove('open'); panelScrim.classList.remove('show'); }
+$('#btnAdjustFab').addEventListener('click', openPanel);
+$('#btnPanelClose').addEventListener('click', closePanel);
+panelScrim.addEventListener('click', closePanel);
+let dragStartY=null;
+$('#panelDrag').addEventListener('touchstart', e => dragStartY = e.touches[0].clientY, {passive:true});
+$('#panelDrag').addEventListener('touchmove', e => {
+  if (dragStartY===null) return;
+  const dy = e.touches[0].clientY - dragStartY;
+  if (dy > 80) { closePanel(); dragStartY=null; }
+}, {passive:true});
+function isDesktop(){ return window.matchMedia('(min-width: 881px)').matches; }
+window.addEventListener('resize', () => { if (isDesktop()) { panel.classList.remove('open'); panelScrim.classList.remove('show'); } scheduleRender(true); });
+
+/* ============================================================
+   Init
+   ============================================================ */
+window.addEventListener('load', () => { if (isDesktop()) openPanel(); });
+// keep compare handle positioned on scroll/resize
+window.addEventListener('resize', () => { if (state.viewMode==='compare') positionCompareLine(); });
+
+})();
+</script>
+</body>
+</html>
