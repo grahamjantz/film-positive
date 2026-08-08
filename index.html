@@ -47,7 +47,7 @@
   input[type=range]{ -webkit-appearance:none; appearance:none; }
 
   /* ---------- layout ---------- */
-  #app{ display:flex; flex-direction:column; min-height:100vh; }
+  #app{ display:flex; flex-direction:column; height:100vh; height:100dvh; }
 
   header.topbar{
     display:flex; align-items:center; justify-content:space-between;
@@ -86,12 +86,12 @@
   .btn svg{ width:15px; height:15px; flex:none; }
 
   main.workspace{
-    flex:1; display:flex; gap:0; min-height:0;
+    flex:1; display:flex; gap:0; min-height:0; overflow:hidden;
   }
 
   /* ---------- viewer ---------- */
   .viewer{
-    flex:1; display:flex; flex-direction:column; min-width:0;
+    flex:1; display:flex; flex-direction:column; min-width:0; min-height:0;
     padding:18px; gap:12px;
   }
   .viewer-empty{
@@ -123,11 +123,11 @@
   .sprocket-rail i{ width:8px; height:8px; margin-top:4px; border-radius:2px; background:var(--bg-inset); box-shadow: inset 0 0 0 1px #000; }
 
   .canvas-wrap{
-    position:relative; max-width:100%; max-height:100%; margin:20px 0; touch-action:none;
+    position:absolute; top:18px; left:14px; right:14px; bottom:18px; touch-action:none;
     display:flex; align-items:center; justify-content:center;
   }
   #viewCanvas{
-    max-width:100%; max-height:60vh; display:block; box-shadow:0 12px 40px rgba(0,0,0,0.55); border-radius:2px;
+    max-width:100%; max-height:100%; width:auto; height:auto; display:block; box-shadow:0 12px 40px rgba(0,0,0,0.55); border-radius:2px;
   }
   .compare-slider-line{
     position:absolute; top:0; bottom:0; width:2px; background:var(--amber); pointer-events:none; display:none;
@@ -321,26 +321,29 @@
   }
   @keyframes spin{ to{ transform:rotate(360deg); } }
 
-  /* mobile panel behaves as slide-over sheet */
+  /* mobile panel behaves as a resizing bottom sheet that shares the screen with the
+     image (never covers it) — the image visibly resizes live as the sheet opens. */
   .panel-scrim{ display:none; }
   @media (max-width: 880px){
     main.workspace{ flex-direction:column; }
+    .viewer{ padding:10px 12px 8px; gap:6px; min-height:120px; }
+    .stage{ min-height:120px; }
+    .filmstrip, .viewer-toolbar, .privacy-note{ flex:none; }
     aside.panel{
-      width:100%; position:fixed; left:0; right:0; bottom:0; top:auto; max-height:78vh;
+      width:100%; flex:none; position:relative; left:auto; right:auto; bottom:auto; top:auto;
+      max-height:58px; overflow:hidden;
       border-left:none; border-top:1px solid var(--line);
-      border-radius:16px 16px 0 0; transform:translateY(100%); transition:transform .25s ease;
-      z-index:60; box-shadow:0 -10px 40px rgba(0,0,0,0.5);
+      border-radius:16px 16px 0 0; transition:max-height .28s ease;
+      box-shadow:0 -6px 24px rgba(0,0,0,0.35); z-index:60;
     }
-    aside.panel.open{ transform:translateY(0); }
-    .panel-scrim{
-      display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:55;
-    }
-    .panel-scrim.show{ display:block; }
-    .panel-drag{ display:flex; justify-content:center; padding:9px 0 3px; }
+    aside.panel.open{ max-height:56vh; }
+    .panel-scroll{ min-height:0; }
+    .panel-scrim{ display:none !important; }
+    .panel-drag{ display:flex; justify-content:center; padding:11px 0 5px; cursor:pointer; }
     .panel-drag i{ width:36px; height:4px; border-radius:3px; background:var(--line); display:block; }
-    #viewCanvas{ max-height:44vh; }
     .brand .sub{ display:none; }
     .btn span.label-full{ display:none; }
+    #btnAdjustFab{ display:none !important; }
   }
   @media (min-width: 881px){
     .panel-drag{ display:none; }
@@ -557,6 +560,49 @@
 <script>
 (function(){
 "use strict";
+
+/* ============================================================
+   iOS home-screen icon
+   iOS ignores SVG data URIs for apple-touch-icon, so we draw a
+   real PNG on a canvas at load time and point the link tag at it.
+   No extra icon file needed — still one HTML file.
+   ============================================================ */
+function buildIconDataURL(size){
+  const c = document.createElement('canvas');
+  c.width = size; c.height = size;
+  const cx = c.getContext('2d');
+  cx.fillStyle = '#141210';
+  cx.fillRect(0, 0, size, size); // full-bleed square; iOS applies its own rounded mask
+  const pad = size * 0.1;
+  cx.strokeStyle = '#c1440e';
+  cx.lineWidth = size * 0.05;
+  cx.strokeRect(pad, pad, size - pad*2, size - pad*2);
+  const dotR = size * 0.032;
+  const xs = [0.25, 0.5, 0.75].map(f => f * size);
+  cx.fillStyle = '#c1440e';
+  xs.forEach(x => {
+    cx.beginPath(); cx.arc(x, pad, dotR, 0, Math.PI*2); cx.fill();
+    cx.beginPath(); cx.arc(x, size - pad, dotR, 0, Math.PI*2); cx.fill();
+  });
+  const gw = size * 0.42, gh = size * 0.34;
+  cx.fillStyle = '#e8dcc8';
+  cx.fillRect(size/2 - gw/2, size/2 - gh/2, gw, gh);
+  return c.toDataURL('image/png');
+}
+function setupAppleTouchIcon(){
+  try {
+    const href = buildIconDataURL(180);
+    let link = document.querySelector('link[rel="apple-touch-icon"]');
+    if (!link){
+      link = document.createElement('link');
+      link.rel = 'apple-touch-icon';
+      document.head.appendChild(link);
+    }
+    link.setAttribute('href', href);
+    link.removeAttribute('sizes');
+  } catch(e) { /* canvas unavailable — static SVG fallback stays in place */ }
+}
+setupAppleTouchIcon();
 
 /* ============================================================
    State
@@ -1493,13 +1539,19 @@ function closePanel(){ panel.classList.remove('open'); panelScrim.classList.remo
 $('#btnAdjustFab').addEventListener('click', openPanel);
 $('#btnPanelClose').addEventListener('click', closePanel);
 panelScrim.addEventListener('click', closePanel);
-let dragStartY=null;
-$('#panelDrag').addEventListener('touchstart', e => dragStartY = e.touches[0].clientY, {passive:true});
+let dragStartY=null, dragMoved=false;
+$('#panelDrag').addEventListener('touchstart', e => { dragStartY = e.touches[0].clientY; dragMoved=false; }, {passive:true});
 $('#panelDrag').addEventListener('touchmove', e => {
   if (dragStartY===null) return;
   const dy = e.touches[0].clientY - dragStartY;
+  if (Math.abs(dy) > 8) dragMoved = true;
   if (dy > 80) { closePanel(); dragStartY=null; }
+  if (dy < -40) { openPanel(); dragStartY=null; }
 }, {passive:true});
+$('#panelDrag').addEventListener('click', () => {
+  if (isDesktop() || dragMoved) { dragMoved=false; return; }
+  panel.classList.contains('open') ? closePanel() : openPanel();
+});
 function isDesktop(){ return window.matchMedia('(min-width: 881px)').matches; }
 window.addEventListener('resize', () => { if (isDesktop()) { panel.classList.remove('open'); panelScrim.classList.remove('show'); } scheduleRender(true); });
 
