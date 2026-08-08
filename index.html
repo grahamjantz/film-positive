@@ -202,7 +202,7 @@
     background:var(--bg-raised);
     display:flex; flex-direction:column; min-height:0;
   }
-  .panel-scroll{ flex:1; overflow-y:auto; padding:16px 16px 90px; }
+  .panel-scroll{ flex:1; overflow-y:auto; padding:16px 16px 28px; }
   .panel-header{
     padding:14px 16px 0; font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.16em;
     text-transform:uppercase; color:var(--ink-dim);
@@ -297,13 +297,35 @@
     display:flex; gap:8px; z-index:6;
   }
 
-  /* ---------- bottom action bar (mobile-first anchor even on desktop) ---------- */
-  .bottom-bar{
-    position:sticky; bottom:0; z-index:30;
-    display:flex; gap:10px; padding:12px 16px; border-top:1px solid var(--line-soft);
-    background:linear-gradient(0deg, var(--bg) 60%, rgba(20,18,16,0));
+  /* ---------- persistent bottom nav bar ---------- */
+  .app-navbar{
+    display:flex; align-items:center; gap:10px; flex:none; position:relative; z-index:70;
+    padding:10px 16px calc(10px + env(safe-area-inset-bottom));
+    border-top:1px solid var(--line-soft);
+    background:var(--bg-raised);
   }
-  .bottom-bar .btn{ flex:1; justify-content:center; padding:12px; font-size:13.5px; }
+  .navbar-adjust{
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    background:transparent; border:none; color:var(--ink-dim); cursor:pointer;
+    font-family:inherit; font-size:10.5px; font-weight:600; padding:4px 12px;
+    -webkit-appearance:none; appearance:none; flex:none;
+  }
+  .navbar-adjust svg{ width:19px; height:19px; }
+  .navbar-adjust.active{ color:var(--amber); }
+  .navbar-select{
+    -webkit-appearance:none; appearance:none; flex:none;
+    background:var(--bg-inset); border:1px solid var(--line); color:var(--ink);
+    border-radius:8px; padding:11px 10px; font-size:12.5px; font-weight:600; font-family:inherit; cursor:pointer;
+  }
+  .navbar-save{
+    flex:1; display:flex; align-items:center; justify-content:center; gap:7px;
+    background:var(--amber); border:1px solid var(--amber); color:#fff8f0;
+    border-radius:9px; padding:12px; font-size:13.5px; font-weight:700; font-family:inherit;
+    cursor:pointer; -webkit-appearance:none; appearance:none; transition:background .15s;
+  }
+  .navbar-save:hover{ background:var(--amber-bright); }
+  .navbar-save:disabled{ opacity:0.5; cursor:not-allowed; }
+  @media (min-width: 881px){ .navbar-adjust{ display:none; } }
 
   input[type=file]{ display:none; }
 
@@ -357,11 +379,9 @@
     aside.panel.open .panel-drag-chev{ transform:rotate(180deg); }
     .brand .sub{ display:none; }
     .btn span.label-full{ display:none; }
-    #btnAdjustFab{ display:none !important; }
   }
   @media (min-width: 881px){
     .panel-drag{ display:none; }
-    .panel-close-btn{ display:none; }
   }
 
   .hidden{ display:none !important; }
@@ -553,24 +573,23 @@
         </div>
 
       </div>
-
-      <div class="bottom-bar">
-        <button class="btn ghost panel-close-btn" id="btnPanelClose">Done</button>
-        <div style="display:flex; gap:8px; flex:1;">
-          <select id="exportFormat" class="btn small" style="flex:none; padding:9px 8px;">
-            <option value="jpeg">JPEG</option>
-            <option value="png">PNG</option>
-          </select>
-          <button class="btn primary" id="btnSave" style="flex:1; justify-content:center;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-            Save Positive
-          </button>
-        </div>
-      </div>
     </aside>
   </main>
 
-  <button class="btn primary hidden" id="btnAdjustFab" style="position:fixed; right:16px; bottom:16px; z-index:50; border-radius:100px; padding:12px 18px; box-shadow:0 8px 24px rgba(0,0,0,0.5);">Adjust</button>
+  <nav class="app-navbar hidden" id="appNavbar">
+    <button class="navbar-adjust" id="navAdjust" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21v-7M4 10V3M12 21v-11M12 6V3M20 21v-5M20 12V3M1 14h6M9 6h6M17 16h6"/></svg>
+      <span>Adjust</span>
+    </button>
+    <select id="exportFormat" class="navbar-select">
+      <option value="jpeg">JPEG</option>
+      <option value="png">PNG</option>
+    </select>
+    <button class="navbar-save" id="btnSave" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      Save Positive
+    </button>
+  </nav>
 </div>
 
 <input type="file" id="fileInput" accept="image/*" multiple>
@@ -755,7 +774,7 @@ function activateImage(id){
   viewerToolbar.classList.remove('hidden');
   privacyNote.classList.remove('hidden');
   filmstripEl.classList.remove('hidden');
-  $('#btnAdjustFab').classList.remove('hidden');
+  $('#appNavbar').classList.remove('hidden');
   syncControlsFromSettings(rec.settings);
   if (rec.settings.baseAuto && !rec.settings.filmBase && rec.settings.mode === 'color') {
     autoDetectFilmBase(rec);
@@ -1454,7 +1473,7 @@ function removeImage(id){
       viewerToolbar.classList.add('hidden');
       filmstripEl.classList.add('hidden');
       privacyNote.classList.add('hidden');
-      $('#btnAdjustFab').classList.add('hidden');
+      $('#appNavbar').classList.add('hidden');
       dropZone.classList.remove('hidden');
     }
   }
@@ -1582,10 +1601,10 @@ document.addEventListener('paste', e => {
 /* ============================================================
    Mobile panel sheet
    ============================================================ */
-function openPanel(){ panel.classList.add('open'); panelScrim.classList.add('show'); }
-function closePanel(){ panel.classList.remove('open'); panelScrim.classList.remove('show'); }
-$('#btnAdjustFab').addEventListener('click', openPanel);
-$('#btnPanelClose').addEventListener('click', closePanel);
+function openPanel(){ panel.classList.add('open'); panelScrim.classList.add('show'); $('#navAdjust').classList.add('active'); }
+function closePanel(){ panel.classList.remove('open'); panelScrim.classList.remove('show'); $('#navAdjust').classList.remove('active'); }
+function togglePanel(){ panel.classList.contains('open') ? closePanel() : openPanel(); }
+$('#navAdjust').addEventListener('click', togglePanel);
 panelScrim.addEventListener('click', closePanel);
 let dragStartY=null, dragMoved=false;
 $('#panelDrag').addEventListener('touchstart', e => { dragStartY = e.touches[0].clientY; dragMoved=false; }, {passive:true});
@@ -1598,7 +1617,7 @@ $('#panelDrag').addEventListener('touchmove', e => {
 }, {passive:true});
 $('#panelDrag').addEventListener('click', () => {
   if (isDesktop() || dragMoved) { dragMoved=false; return; }
-  panel.classList.contains('open') ? closePanel() : openPanel();
+  togglePanel();
 });
 function isDesktop(){ return window.matchMedia('(min-width: 881px)').matches; }
 window.addEventListener('resize', () => { if (isDesktop()) { panel.classList.remove('open'); panelScrim.classList.remove('show'); } scheduleRender(true); });
